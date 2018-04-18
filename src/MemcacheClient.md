@@ -6,6 +6,13 @@
 
 A Memcache client written in any language can talk directly to a Hazelcast cluster. No additional configuration is required.
 
+<br> </br>
+
+![image](images/NoteSmall.jpg) ***NOTE***: *Memcache client request listener service is not enabled by default. You should enable it on your cluster members to use Memcache client. It can be enabled using the system property `hazelcast.memcache.enabled`. Please refer to the [System Properties section](#system-properties) for the definition of this property and how to set a system property.*
+
+
+### Memcache Client Code Examples
+
 Assume that your cluster members are as shown below.
 
 ```plain
@@ -29,7 +36,7 @@ Assume that you have a PHP application that uses PHP Memcache client to cache th
 ?>
 ```
 
-Notice that Memcache client connects to `10.20.17.1` and uses port`5701`. Here is a Java client code example with SpyMemcached client:
+Notice that Memcache client connects to `10.20.17.1` and uses port `5701`. Here is a Java client code example with SpyMemcached client:
 
 ```java
 MemcachedClient client = new MemcachedClient(
@@ -38,7 +45,7 @@ client.set( "key1", 3600, "value1" );
 System.out.println( client.get( "key1" ) );
 ```
 
-If you want your data to be stored in different maps (e.g. to utilize per map configuration), you can do that with a map name prefix as in the following example code.
+If you want your data to be stored in different maps, for example to utilize per map configuration, you can do that with a map name prefix as in the following example code.
 
 
 ```java
@@ -55,7 +62,7 @@ in a default map named *hz_memcache_default*.
 
 An entry written with a Memcache client can be read by another Memcache client written in another language.
 
-### Unsupported Operations ###
+### Unsupported Operations for Memcache
 
 - CAS operations are not supported. In operations that get CAS parameters, such as append, CAS values are ignored.
 
@@ -70,5 +77,4 @@ An entry written with a Memcache client can be read by another Memcache client w
 
 
 
-<br> </br>
 

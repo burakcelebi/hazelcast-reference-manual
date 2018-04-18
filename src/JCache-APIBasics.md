@@ -1,7 +1,7 @@
 
 ### JCache Base Classes
 
-In the [Example JCache Application section](#example-jcache-application), we have already seen a couple of the base classes and explained how those work. Following are quick descriptions of them.
+In the [Example JCache Application section](#example-jcache-application), we have already seen a couple of the base classes and explained how those work. The following are quick descriptions of them:
 
 **`javax.cache.Caching`**:
 
@@ -10,13 +10,13 @@ implementation, such as Hazelcast JCache.
 
 **`javax.cache.spi.CachingProvider`**:
 
-The SPI that is implemented to bridge between the JCache API and the implementation itself. Hazelcast nodes and clients use different
+The SPI that is implemented to bridge between the JCache API and the implementation itself. Hazelcast members and clients use different
 providers chosen as seen in the [Configuring JCache Provider section](#configuring-jcache-provider) which enable the JCache API to
 interact with Hazelcast clusters.
 
-When a `javax.cache.spi.CachingProvider::getCacheManager` overload is used that takes a `java.lang.ClassLoader` argument, this
-classloader will be part of the scope of the created `java.cache.Cache` and it is not possible to retrieve it on other nodes.
-We advise not to use those overloads, those are not meant to be used in distributed environments!
+When a `javax.cache.spi.CachingProvider.getCacheManager()` overload is used that takes a `java.lang.ClassLoader` argument, this
+classloader will be part of the scope of the created `java.cache.Cache` and it is not possible to retrieve it on other members.
+We advise not to use those overloads, as they are not meant to be used in distributed environments!
 
 **`javax.cache.CacheManager`**:
 
@@ -35,13 +35,13 @@ therefore, acts as a common super type for all compatible configuration classes 
 
 Hazelcast itself offers a special implementation (`com.hazelcast.config.CacheConfig`) of the `Configuration` interface which
 offers more options on the specific Hazelcast properties that can be set to configure features like synchronous and asynchronous
-backups counts or selecting the underlying [In Memory Format](#setting-in-memory-format) of the cache. For more information on this
+backups counts or selecting the underlying [in-memory format](#setting-in-memory-format) of the cache. For more information on this
 configuration class, please see the reference in [JCache Programmatic Configuration section](#jcache-programmatic-configuration).
 
 **`javax.cache.Cache`**:
 
 This interface represents the cache instance itself. It is comparable to `java.util.Map` but offers special operations dedicated
-to the caching use case. Therefore, for example `javax.cache.Cache::put`, unlike `java.util.Map::put`, does not return the old
+to the caching use case. Therefore, for example `javax.cache.Cache.put()`, unlike `java.util.Map.put()`, does not return the old
 value previously assigned to the given key.
 
 <br></br>

@@ -3,14 +3,14 @@
 
 There are 2 types of operations:
 
-* Operations that are aware of a certain partition, e.g. `IMap.get(key)`.
+* Operations that are aware of a certain partition, e.g., `IMap.get(key)`.
 * Operations that are not partition aware, such as the `IExecutorService.executeOnMember(command, member)` operation.
 
 Each of these operation types has a different threading model explained in the following sections.
 
 #### Partition-aware Operations
 
-To execute partition-aware operations, an array of operation threads is created. The size of this array has a default value of two times the number of cores and a minimum value of 2. This value can be changed using the `hazelcast.operation.thread.count` property.
+To execute partition-aware operations, an array of operation threads is created. The default value of this array's size is the number of cores and it has a minimum value of 2. This value can be changed using the `hazelcast.operation.thread.count` property.
 
 Each operation thread has its own work queue and it consumes messages from this work queue. If a partition-aware 
 operation needs to be scheduled, the right thread is found using the formula below.
@@ -50,12 +50,12 @@ till one of the partitions is finished, even though there are other free partiti
 
 **Example:**
 
-Take a 3 node cluster. Two members will have 90 primary partitions and one member will have 91 primary partitions. Let's
-say you have one CPU and 4 cores per CPU. By default, 8 operation threads will be allocated to serve 90 or 91 partitions.
+Take a cluster with three members. Two members will have 90 primary partitions and one member will have 91 primary partitions. Let's
+say you have one CPU and four cores per CPU. By default, four operation threads will be allocated to serve 90 or 91 partitions.
 
 #### Operations that are Not Partition-aware
 
-To execute operations that are not partition-aware, e.g. `IExecutorService.executeOnMember(command, member)`, generic operation 
+To execute operations that are not partition-aware, e.g., `IExecutorService.executeOnMember(command, member)`, generic operation 
 threads are used. When the Hazelcast instance is started, an array of operation threads is created. The size of this array 
 has a default value of the number of cores divided by two with a minimum value of 2. It can be changed using the 
 `hazelcast.operation.generic.thread.count` property. 
@@ -74,7 +74,7 @@ production since performance is dominated by I/O and the system does not run man
  
 #### Priority Operations
  
-In some cases, the system needs to run operations with a higher priority, e.g. an important system operation. To support priority operations, Hazelcast has the following features:
+In some cases, the system needs to run operations with a higher priority, e.g., an important system operation. To support priority operations, Hazelcast has the following features:
 
 * For partition-aware operations: Each partition thread has its own work queue and it also has a priority
   work queue. The partition thread always checks the priority queue before it processes work from its normal work queue.

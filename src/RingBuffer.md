@@ -1,9 +1,9 @@
 ## Ringbuffer
 
-Hazelcast Ringbuffer is a distributed data structure that stores its data in a ring-like structure. You can think of it as a circular array with a 
-given capacity. Each Ringbuffer has a tail and a head. The tail is where the items are added and the head is where the items are overwritten 
-or expired. You can reach each element in a Ringbuffer using a sequence ID, which is mapped to the elements between the head 
-and tail (inclusive) of the Ringbuffer. 
+Hazelcast Ringbuffer is a replicated but not partitioned data structure that stores its data in a ring-like structure. You can 
+think of it as a circular array with a given capacity. Each Ringbuffer has a tail and a head. The tail is where the items are 
+added and the head is where the items are overwritten or expired. You can reach each element in a Ringbuffer using a sequence 
+ID, which is mapped to the elements between the head and tail (inclusive) of the Ringbuffer. 
 
 ### Getting a Ringbuffer and Reading Items
 
@@ -17,7 +17,7 @@ long sequence = ringbuffer.headSequence();
 while(true){
     String item = ringbuffer.readOne(sequence);
     sequence++;
-    ... process item
+    // process item
 }  
 ```
 
@@ -30,10 +30,10 @@ Adding an item to a Ringbuffer is also easy with the Ringbuffer `add` method:
 
 ```java
 Ringbuffer<String> ringbuffer = hz.getRingbuffer("rb");
-ringbuffer.add("someitem")
+ringbuffer.add("someitem");
 ```
 
-Use the method `add` to returns the sequence of the inserted item; the sequence value will always be unique. You can use this as a 
+Use the method `add` to return the sequence of the inserted item; the sequence value will always be unique. You can use this as a 
 very cheap way of generating unique IDs if you are already using Ringbuffer.
 
 
@@ -42,12 +42,12 @@ very cheap way of generating unique IDs if you are already using Ringbuffer.
 Hazelcast Ringbuffer can sometimes be a better alternative than an Hazelcast IQueue. Unlike IQueue, Ringbuffer does not remove the items, it only
 reads items using a certain position. There are many advantages to this approach:
 
-* The same item can be read multiple times by the same thread; this is useful for realizing semantics of read-at-least-once or 
+* The same item can be read multiple times by the same thread. This is useful for realizing semantics of read-at-least-once or 
 read-at-most-once.
 * The same item can be read by multiple threads. Normally you could use an IQueue per thread for the same semantic, but this is 
 less efficient because of the increased remoting. A take from an IQueue is destructive, so the change needs to be applied for backup 
 also, which is why a `queue.take()` is more expensive than a `ringBuffer.read(...)`.
-* Reads are extremely cheap since there is no change in the Ringbuffer, therefore no replication is required. 
+* Reads are extremely cheap since there is no change in the Ringbuffer. Therefore no replication is required. 
 * Reads and writes can be batched to speed up performance. Batching can dramatically improve the performance of Ringbuffer.
  
 
@@ -55,7 +55,7 @@ also, which is why a `queue.take()` is more expensive than a `ringBuffer.read(..
 
 By default, a Ringbuffer is configured with a `capacity` of 10000 items. This creates an array with a size of 10000. If 
 a `time-to-live` is configured, then an array of longs is also created that stores the expiration time for every item. 
-In a lot of cases, you may want to change this `capacity` number to something that better fits your needs. 
+In a lot of cases you may want to change this `capacity` number to something that better fits your needs. 
 
 Below is a declarative configuration example of a Ringbuffer with a `capacity` of 2000 items.
 
@@ -71,9 +71,9 @@ Currently, Hazelcast Ringbuffer is not a partitioned data structure; its data is
 
 ### Backing Up Ringbuffer
 
-Hazelcast Ringbuffer has 1 single synchronous backup by default. You can control the Ringbuffer backup just like most of the other Hazelcast 
-distributed data structures by setting the synchronous and asynchronous backups: `backup-count` and `async-backup-count`. In the example below, a Ringbuffer is configured with 0
-synchronous backups and 1 asynchronous backup:
+Hazelcast Ringbuffer has a single synchronous backup by default. You can control the Ringbuffer backup just like most of the other Hazelcast 
+distributed data structures by setting the synchronous and asynchronous backups: `backup-count` and `async-backup-count`. In the example below, a Ringbuffer is configured with no
+synchronous backups and one asynchronous backup:
 
 ```xml
 <ringbuffer name="rb">
@@ -91,7 +91,7 @@ methods if you need high performance but do not want to give up on consistency.
 
 You can configure Hazelcast Ringbuffer with a time to live in seconds. Using this setting, you can control how long the items remain in 
 the Ringbuffer before they are expired. By default, the time to live is set to 0, meaning that unless the item is overwritten, 
-it will remain in the Ringbuffer indefinitely. If you set a time to live and an item is added, then depending on the Overflow Policy, 
+it will remain in the Ringbuffer indefinitely. If you set a time to live and an item is added, then, depending on the Overflow Policy, 
 either the oldest item is overwritten, or the call is rejected. 
 
 In the example below, a Ringbuffer is configured with a time to live of 180 seconds.
@@ -106,7 +106,7 @@ In the example below, a Ringbuffer is configured with a time to live of 180 seco
 ### Setting Ringbuffer Overflow Policy
 
 Using the overflow policy, you can determine what to do if the oldest item in the Ringbuffer is not old enough to expire when
- more items than the configured RingBuffer capacity are being added. The below options are currently available.
+ more items than the configured Ringbuffer capacity are being added. The below options are currently available.
  
 * `OverflowPolicy.OVERWRITE`: The oldest item is overwritten. 
 * `OverflowPolicy.FAIL`: The call is aborted. The methods that make use of the OverflowPolicy return `-1` to indicate that adding
@@ -129,9 +129,76 @@ for (; ; ) {
 ```
 
 
+### Ringbuffer with Persistent Datastore
+
+Hazelcast allows you to load and store the Ringbuffer items from/to a persistent datastore using the interface `RingbufferStore`. If a Ringbuffer store is enabled, each item added to the Ringbuffer will also be stored at the configured Ringbuffer store. 
+
+If the Ringbuffer store is configured, you can get items with sequences which are no longer in the actual Ringbuffer but are only in the Ringbuffer store. This will probably be much slower but still allow you to continue consuming items from the Ringbuffer even if they are overwritten with newer items in the Ringbuffer.
+
+When a Ringbuffer is being instantiated, it will check if the Ringbuffer store is configured and will request the latest sequence in the Ringbuffer store. This is to enable the Ringbuffer to start with sequences larger than the ones in the Ringbuffer store. In this case, the Ringbuffer is empty but you can still request older items from it (which will be loaded from the Ringbuffer store).
+
+The Ringbuffer store will store items in the same format as the Ringbuffer. If the `BINARY` in-memory format is used, the Ringbuffer store must implement the interface `RingbufferStore<byte[]>` meaning that the Ringbuffer will receive items in the binary format. If the `OBJECT` in-memory format is used, the Ringbuffer store must implement the interface `RingbufferStore<K>`, where `K` is the type of item being stored (meaning that the Ringbuffer store will receive the deserialized object).
+
+When adding items to the Ringbuffer, the method `storeAll` allows you to store items in batches.
+
+The following example class includes all of the `RingbufferStore` methods.
+
+```java
+public class TheRingbufferObjectStore implements RingbufferStore<Item> {
+
+    @Override
+    public void store(long sequence, Item data) {
+        System.out.println("Object store");
+    }
+
+    @Override
+    public void storeAll(long firstItemSequence, Item[] items) {
+        System.out.println("Object store all");
+    }
+
+    @Override
+    public Item load(long sequence) {
+        System.out.println("Object load");
+        return null;
+    }
+
+    @Override
+    public long getLargestSequence() {
+        System.out.println("Object get largest sequence");
+        return -1;
+    }
+}
+```
+
+
+`Item` must be serializable. The following is an example of a Ringbuffer with the Ringbuffer store configured and enabled.
+
+
+```xml
+    <ringbuffer name="default">
+        <capacity>10000</capacity>
+        <time-to-live-seconds>30</time-to-live-seconds>
+        <backup-count>1</backup-count>
+        <async-backup-count>0</async-backup-count>
+        <in-memory-format>BINARY</in-memory-format>
+        <ringbuffer-store>
+            <class-name>com.hazelcast.RingbufferStoreImpl</class-name>
+        </ringbuffer-store>
+    </ringbuffer>
+```
+
+Below are the explanations for the Ringbuffer store configuration elements: 
+
+- **class-name**: Name of the class implementing the `RingbufferStore` interface. 
+    
+- **factory-class-name**: Name of the class implementing the `RingbufferStoreFactory` interface. This interface allows a factory class to be registered instead of a class implementing the `RingbufferStore` interface.
+    
+Either the `class-name` or the `factory-class-name` element should be used.
+
+
 ### Configuring Ringbuffer In-Memory Format
 
-You can configure Hazelcast Ringbuffer with an in-memory format which controls the format of the Ringbuffer's stored items. By default, `BINARY` in-memory format is used, 
+You can configure Hazelcast Ringbuffer with an in-memory format that controls the format of the Ringbuffer's stored items. By default, `BINARY` in-memory format is used, 
 meaning that the object is stored in a serialized form. You can select the `OBJECT` in-memory format, which is useful when filtering is 
 applied or when the `OBJECT` in-memory format has a smaller memory footprint than `BINARY`. 
 
@@ -139,15 +206,41 @@ In the declarative configuration example below, a Ringbuffer is configured with 
 
 ```xml
 <ringbuffer name="rb">
-    <in-memory-format>BINARY</in-memory-format>
+    <in-memory-format>OBJECT</in-memory-format>
 </ringbuffer>
 ```
+
+### Configuring Split-Brain Protection for Ringbuffer
+
+Ringbuffer can be configured to check for a minimum number of available members before applying Ringbuffer operations. This is a check to avoid performing successful Ringbuffer operations on all parts of a cluster during a network partition and can be configured using the element `quorum-ref`. You should set this element's value as the quorum's name, which you configured under the `quorum` element as explained in the [Split-Brain Protection section](#split-brain-protection). Following is an example snippet:
+
+```xml
+<ringbuffer name="rb">
+    <quorum-ref>quorumname</quorum-ref>
+</ringbuffer>
+```
+
+Following is a list of methods that now support Split-Brain Protection checks. The list is grouped by quorum type.
+
+- WRITE, READ_WRITE:
+    - `add`
+    - `addAllAsync`
+    - `addAsync`
+- READ, READ_WRITE:
+    - `capacity`
+    - `headSequence`
+    - `readManyAsync`
+    - `readOne`
+    - `remainingCapacity`
+    - `size`
+    - `tailSequence`
+
 
 
 ### Adding Batched Items
 
-In the previous examples, the method `ringBuffer.add()` is used to add an item to the Ringbuffer. The problem with this method 
-is that it always overwrites and that it does not support batching. Batching can have a huge
+In the previous examples, the method `ringBuffer.add()` is used to add an item to the Ringbuffer. The problems with this method 
+are that it always overwrites and that it does not support batching. Batching can have a huge
 impact on the performance. You can use the method `addAllAsync` to support batching. 
 
 Please see the following example code.
@@ -155,10 +248,10 @@ Please see the following example code.
 ```java
 List<String> items = Arrays.asList("1","2","3");
 ICompletableFuture<Long> f = rb.addAllAsync(items, OverflowPolicy.OVERWRITE);
-f.get()
+f.get();
 ```  
       
-In the above case, three strings are added to the Ringbuffer using the policy `OverflowPolicy.OVERWRITE`. Please see the [Overflow Policy section](#overflow-policy) 
+In the above case, three strings are added to the Ringbuffer using the policy `OverflowPolicy.OVERWRITE`. Please see the [Overflow Policy section](#setting-ringbuffer-overflow-policy) 
 for more information.
 
 ### Reading Batched Items
@@ -252,6 +345,7 @@ The following shows the declarative configuration of a Ringbuffer called `rb`. T
     <async-backup-count>0</async-backup-count>
     <time-to-live-seconds>0</time-to-live-seconds>
     <in-memory-format>BINARY</in-memory-format>
+    <quorum-ref>quorumname</quorum-ref>    
 </ringbuffer>
 ```
 
@@ -263,12 +357,9 @@ RingbufferConfig rbConfig = new RingbufferConfig("rb")
     .setBackupCount(1)
     .setAsyncBackupCount(0)
     .setTimeToLiveSeconds(0)
-    .setInMemoryFormat(InMemoryFormat.BINARY);
+    .setInMemoryFormat(InMemoryFormat.BINARY)
+    .setQuorumName("quorumname");
 Config config = new Config();
 config.addRingbufferConfig(rbConfig);
 ```        
-
-***RELATED INFORMATION***
-
-*Please refer to the [Ringbuffer Configuration section](#ringbuffer-configuration) for more information on configuring the Ringbuffer.*
 

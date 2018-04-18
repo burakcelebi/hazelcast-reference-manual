@@ -2,7 +2,9 @@
 
 ## Native Client Security
 
-![](images/enterprise-onlycopy.jpg)
+<font color="#3981DB">**Hazelcast IMDG Enterprise**</font>
+<br></br>
+
 
 
 Hazelcast's Client security includes both authentication and authorization.
@@ -14,19 +16,19 @@ The authentication mechanism works the same as cluster member authentication. To
 ```xml
 <security enabled="true">
   <client-login-modules>
-    <login-module usage="required"
+    <login-module usage="REQUIRED"
         class-name="com.hazelcast.examples.MyRequiredClientLoginModule">
       <properties>
         <property name="property3">value3</property>
       </properties>
     </login-module>
-    <login-module usage="sufficient"
+    <login-module usage="SUFFICIENT"
         class-name="com.hazelcast.examples.MySufficientClientLoginModule">
       <properties>
         <property name="property4">value4</property>
       </properties>
     </login-module>
-    <login-module usage="optional"
+    <login-module usage="OPTIONAL"
         class-name="com.hazelcast.examples.MyOptionalClientLoginModule">
       <properties>
         <property name="property5">value5</property>
@@ -37,7 +39,7 @@ The authentication mechanism works the same as cluster member authentication. To
 </security>
 ```
 
-You can define as many as `LoginModules` as you want in configuration. Those are executed in the given order. The `usage` attribute has 4 values: 'required', 'requisite', 'sufficient' and 'optional' as defined in `javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag`.
+You can define as many as `LoginModules` as you want in configuration. Those are executed in the order given in configuration. The `usage` attribute has 4 values: 'required', 'requisite', 'sufficient' and 'optional' as defined in `javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag`.
 
 ```java
 ClientConfig clientConfig = new ClientConfig();
@@ -47,21 +49,21 @@ HazelcastInstance client = HazelcastClient.newHazelcastClient( clientConfig );
 
 ### Authorization
 
-Hazelcast client authorization is configured by a client permission policy. Hazelcast has a default permission policy implementation that uses permission configurations defined in the Hazelcast security configuration. Default policy permission checks are done against instance types (map, queue, etc.), instance names (map, queue, name, etc.), instance actions (put, read, remove, add, etc.), client endpoint addresses, and client principal defined by the Credentials object. Instance and principal names and endpoint addresses can be defined as wildcards(*). Please see the [Network Configuration section](#network-configuration) and [Using Wildcard section](#using-wildcard).
+Hazelcast client authorization is configured by a client permission policy. Hazelcast has a default permission policy implementation that uses permission configurations defined in the Hazelcast security configuration. Default policy permission checks are done against instance types (map, queue, etc.), instance names (map, queue, name, etc.), instance actions (put, read, remove, add, etc.), client endpoint addresses, and client principal defined by the Credentials object. The default permission policy allows to use comma separated names in the principal attribute configuration. Instance and principal names and endpoint addresses can be defined as wildcards(*). Please see the [Network Configuration section](#other-network-configurations) and [Using Wildcards section](#using-wildcards).
 
 ```xml
 <security enabled="true">
   <client-permissions>
-    <!-- Principal 'admin' from endpoint '127.0.0.1' has all permissions. -->
-    <all-permissions principal="admin">
+    <!-- Principals 'admin' and 'root' from endpoint '127.0.0.1' have all permissions. -->
+    <all-permissions principal="admin,root">
       <endpoints>
         <endpoint>127.0.0.1</endpoint>
       </endpoints>
     </all-permissions>
         
     <!-- Principals named 'dev' from all endpoints have 'create', 'destroy', 
-         'put', 'read' permissions for map named 'default'. -->
-    <map-permission name="default" principal="dev">
+         'put', 'read' permissions for map named 'myMap'. -->
+    <map-permission name="myMap" principal="dev">
       <actions>
         <action>create</action>
         <action>destroy</action>
@@ -125,13 +127,13 @@ public interface IPermissionPolicy {
 }
 ```
 
-Permission policy implementations can access client-permissions in configuration by using
+Permission policy implementations can access client-permissions that are in configuration by using
 `SecurityConfig.
-getClientPermissionConfigs()` when the method `configure(SecurityConfig securityConfig, Properties properties)` is called by Hazelcast.
+getClientPermissionConfigs()` when Hazelcast calls the method `configure(SecurityConfig securityConfig, Properties properties)`.
 
 The `IPermissionPolicy.getPermissions(Subject subject, Class<? extends Permission> type)` method is used to determine a client request that has been granted permission to perform a security-sensitive operation. 
 
-Permission policy should return a `PermissionCollection` containing permissions of the given type for the given `Subject`. The Hazelcast access controller will call `PermissionCollection.implies(Permission)` on returning `PermissionCollection` and will decide if the current `Subject` has permission to access the requested resources or not.
+Permission policy should return a `PermissionCollection` containing permissions of the given type for the given `Subject`. The Hazelcast access controller will call `PermissionCollection.implies(Permission)` on returning `PermissionCollection` and it will decide whether or not the current `Subject` has permission to access the requested resources.
 
 ### Permissions
 
@@ -286,6 +288,19 @@ Permission policy should return a `PermissionCollection` containing permissions 
 ```
 	Actions: all, create, destroy, modify, read
 
+- FlakeIdGenerator Permission
+
+```xml
+<flake-id-generator-permission name="name" principal="principal">
+  <endpoints>
+    ...
+  </endpoints>
+  <actions>
+    ...
+  </actions>
+</flake-id-generator-permission>
+```
+	Actions: all, create, destroy, modify
 
 - Semaphore Permission
 
@@ -324,5 +339,37 @@ Permission policy should return a `PermissionCollection` containing permissions 
   </endpoints>
 </transaction-permission>
 ```
+
+- Cache Permission
+
+```xml
+<cache-permission name="/hz/cache-name" principal="principal">
+  <endpoints>
+    ...
+  </endpoints>
+  <actions>
+    ...
+  </actions>
+</cache-permission>
+```
+	Actions: all, create, destroy, put, read, remove, listen
+
+- User Code Deployment Permission
+
+```xml
+<user-code-deployment-permission principal="principal">
+  <endpoints>
+    ...
+  </endpoints>
+  <actions>
+    ...
+  </actions>
+</user-code-deployment-permission>
+```
+  Actions: all, deploy
+
+<br></br>
+![image](images/NoteSmall.jpg) ***NOTE:*** *The name provided in `cache-permission` must be the Hazelcast distributed object name corresponding to the `Cache` as described in [JCache - Hazelcast Instance Integration](#jcache-hazelcast-instance-integration).*
+<br></br>
 
 <br> </br>

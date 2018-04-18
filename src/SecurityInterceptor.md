@@ -1,26 +1,28 @@
 
 ## Security Interceptor
 
-![](images/enterprise-onlycopy.jpg)
+<font color="#3981DB">**Hazelcast IMDG Enterprise**</font>
+<br></br>
+
 
 Hazelcast allows you to intercept every remote operation executed by the client. This lets you add a very flexible custom security logic. To do this, implement `com.hazelcast.security.SecurityInterceptor`.
 
 ```java
 public class MySecurityInterceptor implements SecurityInterceptor {
 
-  public void before( Credentials credentials, String serviceName,
+    public void before( Credentials credentials, String serviceName,
                       String methodName, Parameters parameters )
-      throws AccessControlException {
-    // credentials: client credentials 
-    // serviceName: MapService.SERVICE_NAME, QueueService.SERVICE_NAME, ... etc
-    // methodName: put, get, offer, poll, ... etc
-    // parameters: holds parameters of the executed method, iterable.
-  }
+          throws AccessControlException {
+        // credentials: client credentials 
+        // serviceName: MapService.SERVICE_NAME, QueueService.SERVICE_NAME, ... etc
+        // methodName: put, get, offer, poll, ... etc
+        // parameters: holds parameters of the executed method, iterable.
+    }
 
-  public void after( Credentials credentials, String serviceName,
+    public void after( Credentials credentials, String serviceName,
                      String methodName, Parameters parameters ) {
-    // can be used for logging etc.
-  }
+        // can be used for logging etc.
+    }
 }
 ```
 

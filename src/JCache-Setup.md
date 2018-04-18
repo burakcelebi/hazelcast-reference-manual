@@ -2,19 +2,19 @@
 
 ## JCache Setup and Configuration
 
-This sub-chapter shows what is necessary to provide the JCache API and the Hazelcast JCache implementation for your application. In
-addition, it demonstrates the different configuration options as well as a description of the configuration properties.
+This section shows what is necessary to provide the JCache API and the Hazelcast JCache implementation for your application. In
+addition, it demonstrates the different configuration options and describes the configuration properties.
 
 ### Setting up Your Application
 
 To provide your application with this JCache functionality, your application needs the JCache API inside its classpath. This API is the bridge between the specified JCache standard and the implementation provided by Hazelcast.
 
-The way to integrate the JCache API JAR into the application classpath depends on the build system used. For Maven, Gradle, SBT,
-Ivy and many other build systems, all using Maven based dependency repositories, perform the integration by adding
+The method of integrating the JCache API JAR into the application classpath depends on the build system used. For Maven, Gradle, SBT,
+Ivy, and many other build systems, all using Maven-based dependency repositories, perform the integration by adding
 the Maven coordinates to the build descriptor.
 
-As already mentioned, next to the default Hazelcast coordinates that might be already part of the application, you have to add JCache
-coordinates.
+As already mentioned, you have to add JCache
+coordinates next to the default Hazelcast coordinates that might be already part of the application.
 
 For Maven users, the coordinates look like the following code:
 
@@ -22,7 +22,7 @@ For Maven users, the coordinates look like the following code:
 <dependency>
   <groupId>javax.cache</groupId>
   <artifactId>cache-api</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
 </dependency>
 ```
 With other build systems, you might need to describe the coordinates in a different way.
@@ -38,7 +38,7 @@ If you use `hazelcast-all.jar`:
 <dependency>
   <groupId>com.hazelcast</groupId>
   <artifactId>hazelcast-all</artifactId>
-  <version>3.4</version>
+  <version>"your Hazelcast version, e.g. 3.10"</version>
 </dependency>
 ```
 
@@ -48,13 +48,12 @@ If you use `hazelcast.jar`:
 <dependency>
   <groupId>com.hazelcast</groupId>
   <artifactId>hazelcast</artifactId>
-  <version>3.4</version>
+  <version>"your Hazelcast version, e.g. 3.10"</version>
 </dependency>
 ```
-The users of other build systems have to adjust the way of
-defining the dependency to their needs.
+The users of other build systems have to adjust the definition of the dependency to their needs.
 
-#### Connecting Clients to Remote Server
+#### Connecting Clients to Remote Member
 
 When the users want to use Hazelcast clients to connect to a remote cluster, the `hazelcast-client.jar` dependency is also required
 on the client side applications. This JAR is already included in `hazelcast-all.jar`. Or, you can add it to the classpath using the following
@@ -63,12 +62,12 @@ Maven snippet:
 ```xml
 <dependency>
   <groupId>com.hazelcast</groupId>
-  <artifactId>hazelcast</artifactId>
-  <version>3.4</version>
+  <artifactId>hazelcast-client</artifactId>
+  <version>"your Hazelcast version, e.g. 3.10"</version>
 </dependency>
 ```
 
-For other build systems, e.g. ANT, the users have to download these dependencies from either the JSR-107 specification and
-Hazelcast community website (<a href="http://www.hazelcast.org" target="_blank">http://www.hazelcast.org</a>) or from the Maven repository search page
+For other build systems, for instance, ANT, the users have to download these dependencies from either the JSR-107 specification and
+Hazelcast community website (<a href="https://hazelcast.org/" target="_blank">http://www.hazelcast.org</a>) or from the Maven repository search page
 (<a href="http://search.maven.org" target="_blank">http://search.maven.org</a>).
 

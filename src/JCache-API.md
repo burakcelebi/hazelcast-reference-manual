@@ -21,10 +21,9 @@ The `User` class is the representation of a user table in the database. To keep 
 
 ```java
 public class User {
-  private int userId;
-  private String username;
-
-  // Getters and setters
+    private int userId;
+    private String username;
+    // Getters and setters
 }
 ```
 #### Creating DAO Interface Example
@@ -32,11 +31,11 @@ public class User {
 The DAO interface is also kept easy in this example. It provides a simple method to retrieve (find) a user by its `userId`.
 
 ```java
-public interface UserDAO {
-  User findUserById( int userId );
-  boolean storeUser( int userId, User user );
-  boolean removeUser( int userId );
-  Collection<Integer> allUserIds();
+public interface UserDao {
+    User findUserById( int userId );
+    boolean storeUser( int userId, User user );
+    boolean removeUser( int userId );
+    Collection<Integer> allUserIds();
 }
 ```
 #### Configuring JCache Example
@@ -80,16 +79,16 @@ Let's go through this configuration line by line.
 
 ##### Setting the Cache Type and Expire Policy
 
-First, we set the expected types for the cache, which is already known from the previous example. On the next line, an
-`javax.cache.expiry.ExpirePolicy` is configured. Almost all integration `ExpirePolicy` implementations are configured using
+First, we set the expected types for the cache, which is already known from the previous example. On the next line, a
+`javax.cache.expiry.ExpiryPolicy` is configured. Almost all integration `ExpiryPolicy` implementations are configured using
 `javax.cache.configuration.Factory` instances. `Factory` and `FactoryBuilder` are explained later in this chapter.
 
 ##### Configuring Read-Through and Write-Through
 
 The next two lines configure the thread that will be read-through and write-through to the underlying backend resource that is configured
 over the next few lines. The JCache API offers `javax.cache.integration.CacheLoader` and `javax.cache.integration.CacheWriter` to
-implement adapter classes to any kind of backend resource, e.g. JPA, JDBC, or any other backend technology implementable in Java.
-The interfaces provides the typical CRUD operations like `create`, `get`, `update`, `delete` and some bulk operation versions of those
+implement adapter classes to any kind of backend resource, e.g., JPA, JDBC, or any other backend technology implementable in Java.
+The interface provides the typical CRUD operations like `create`, `get`, `update`, `delete`, and some bulk operation versions of those
 common operations. We will look into the implementation of those implementations later.
 
 ##### Configuring Entry Listeners

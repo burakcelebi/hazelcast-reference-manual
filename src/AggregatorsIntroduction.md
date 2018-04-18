@@ -2,7 +2,7 @@
 
 ### Using the Aggregations API
 
-We now look into the possible options of what can be achieved using the
+We now look into what can be achieved using the
 Aggregations API. To work on some deeper examples, let's quickly have a look at the available classes and interfaces and
 discuss their usage.
 
@@ -13,9 +13,10 @@ This class already provides a few different static methods to achieve the most c
 accepts all incoming values and does not apply any data extraction or transformation upon them before supplying them to
 the aggregation function itself.
 
-For filtering data sets, you have two different options by default.
-- You can either supply a `com.hazelcast.query.Predicate` if you want to filter on values and / or keys, or
-- you can supply a `com.hazelcast.mapreduce.KeyPredicate` if you can decide directly on the data
+For filtering data sets, you have two different options by default:
+
+- You can either supply a `com.hazelcast.query.Predicate` if you want to filter on values and/or keys, or
+- You can supply a `com.hazelcast.mapreduce.KeyPredicate` if you can decide directly on the data
 key without the need to deserialize the value.
 
 As mentioned above, all APIs are fully Java 8 and Lambda compatible. Let's have a look on how we can do basic filtering using
@@ -42,7 +43,7 @@ class JonesKeyPredicate implements KeyPredicate<String> {
 ##### Filtering on Values with Predicate
 
 Using the standard Hazelcast `Predicate` interface, we can also filter based on the value of a data entry. In the following example, you can
-only select values which are divisible by 4 without a remainder. 
+only select values that are divisible by 4 without a remainder. 
 
 ```java
 Supplier<...> supplier = Supplier.fromPredicate(
@@ -69,7 +70,7 @@ Supplier<String, Integer, String> supplier = Supplier.all(
 );
 ```
 
-You can see a Java 6 / 7 example in the [Aggregations Examples section](#aggregation-examples).
+You can see a Java 6/7 example in the [Aggregations Examples section](#aggregations-examples).
 
 Apart from the fact we transformed the input value of type `int` (or Integer) to a string, we can see that the generic information
 of the resulting `Supplier` has changed as well. This indicates that we now have an aggregation working on string values.
@@ -150,7 +151,7 @@ contains type safe aggregations of the following types:
 Those aggregations are similar to their counterparts on relational databases and can be equated to SQL statements as set out
 below.
  
-##### Average #####
+##### Average
 
 Calculates an average value based on all selected values.
 
@@ -163,7 +164,7 @@ map.aggregate( Supplier.all( person -> person.getAge() ),
 SELECT AVG(person.age) FROM person;
 ```
 
-##### Sum #####
+##### Sum
 
 Calculates a sum based on all selected values.
 
@@ -176,7 +177,7 @@ map.aggregate( Supplier.all( person -> person.getAge() ),
 SELECT SUM(person.age) FROM person;
 ```
 
-##### Minimum (Min) #####
+##### Minimum (Min)
 
 Finds the minimal value over all selected values.
 
@@ -189,7 +190,7 @@ map.aggregate( Supplier.all( person -> person.getAge() ),
 SELECT MIN(person.age) FROM person;
 ```
 
-##### Maximum (Max) #####
+##### Maximum (Max)
 
 Finds the maximal value over all selected values.
 
@@ -202,7 +203,7 @@ map.aggregate( Supplier.all( person -> person.getAge() ),
 SELECT MAX(person.age) FROM person;
 ```
 
-##### Distinct Values #####   
+##### Distinct Values  
 
 Returns a collection of distinct values over the selected values
 
@@ -215,7 +216,7 @@ map.aggregate( Supplier.all( person -> person.getAge() ),
 SELECT DISTINCT person.age FROM person;
 ```
 
-##### Count #####    
+##### Count   
 
 Returns the element count over all selected values 
 
@@ -261,7 +262,7 @@ transformation steps chained one after another.
 #### Configuring Aggregations
 
 As stated before, the easiest way to configure the resources used by the underlying MapReduce framework is to supply a `JobTracker`
-to the aggregation call itself by passing it to either `IMap::aggregate` or `MultiMap::aggregate`.
+to the aggregation call itself by passing it to either `IMap.aggregate()` or `MultiMap.aggregate()`.
 
 There is another way to implicitly configure the underlying used `JobTracker`. If no specific `JobTracker` was
 passed for the aggregation call, internally one will be created using the following naming specifications:
@@ -274,7 +275,7 @@ For `MultiMap` it is very similar:
 
 - `hz::aggregation-multimap-` and the concatenated name of the MultiMap.
 
-Knowing that (the specification of the name), we can configure the `JobTracker` as expected 
+Knowing the specification of the name, we can configure the `JobTracker` as expected 
 (as described in [Retrieving a JobTracker Instance](#retrieving-a-jobtracker-instance)) using the naming spec we just learned. For more information on configuration of the 
 `JobTracker`, please see [Configuring Jobtracker](#configuring-jobtracker). 
 

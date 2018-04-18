@@ -3,17 +3,22 @@
 
 
 ## REST Client
-Hazelcast provides a REST interface, i.e. it provides an HTTP service in each node so that you can access your `map` and `queue` using HTTP protocol. Assuming `mapName` and `queueName` are already configured in your Hazelcast, its structure is shown below.
+Hazelcast provides a REST interface, i.e. it provides an HTTP service in each cluster member so that you can access your `map` and `queue` using HTTP protocol. Assuming `mapName` and `queueName` are already configured in your Hazelcast, its structure is shown below.
 
-`http://node IP address:port/hazelcast/rest/maps/mapName/key`
+`http://member IP address:port/hazelcast/rest/maps/mapName/key`
 
-`http://node IP address:port/hazelcast/rest/queues/queueName`
+`http://member IP address:port/hazelcast/rest/queues/queueName`
 
 For the operations to be performed, standard REST conventions for HTTP calls are used.
 
+<br> </br>
+![image](images/NoteSmall.jpg) ***NOTE***: *REST client request listener service is not enabled by default. You should enable it on your cluster members to use REST client. It can be enabled using the system property `hazelcast.rest.enabled`. Please refer to the [System Properties section](#system-properties) for the definition of this property and how to set a system property.*
 
 
-Assume that your cluster members are as shown below.
+
+### REST Client GET/POST/DELETE Examples
+
+In the following GET, POST, and DELETE examples, assume that your cluster members are as shown below.
 
 ```plain
 Members [5] {
@@ -47,7 +52,7 @@ Content-Length: 0
 ---
 
 
-**Creating/Updating Entries in a Map**
+#### Creating/Updating Entries in a Map for REST Client
 
 You can put a new `key1/value1` entry into a map by using POST call to 
 `http://10.20.17.1:5701/hazelcast/
@@ -68,7 +73,7 @@ It will return the following response if successful:
 < Content-Length: 0
 ```
 
-**Retrieving Entries from a Map**
+#### Retrieving Entries from a Map for REST Client
 
 If you want to retrieve an entry, you can use a GET call to `http://10.20.17.1:5701/hazelcast/rest/maps/mapName/key1`. You can also retrieve this entry from another member of your cluster, such as 
 `http://10.20.17.3:5701/hazelcast/rest/
@@ -99,7 +104,7 @@ It will return the following if there is no mapping for the given key:
 ```
 
 
-**Removing Entries from a Map**
+#### Removing Entries from a Map for REST Client
 
 You can use a DELETE call to remove an entry. A sample DELETE call is shown below with its response.
 
@@ -123,7 +128,7 @@ $ curl -v -X DELETE http://10.20.17.1:5701/hazelcast/rest/maps/mapName
 < Content-Length: 0
 ```
 
-**Offering Items on a Queue**
+#### Offering Items on a Queue for REST Client
 
 You can use a POST call to create an item on the queue. A sample is shown below.
 
@@ -132,7 +137,7 @@ $ curl -v -X POST -H "Content-Type: text/plain" -d "foo"
     http://10.20.17.1:5701/hazelcast/rest/queues/myEvents
 ```
 
-The above call is equivalent to `HazelcastInstance#getQueue("myEvents").offer("foo");`.
+The above call is equivalent to `HazelcastInstance.getQueue("myEvents").offer("foo");`.
 
 It will return the following if successful:
 
@@ -149,7 +154,7 @@ It will return the following if the queue is full and the item is not able to be
 < Content-Length: 0
 ```
 
-**Retrieving Items from a Queue**
+#### Retrieving Items from a Queue for REST Client
 
 You can use a DELETE call for retrieving items from a queue. Note that you should state the poll timeout while polling for queue events by an extra path parameter. 
 
@@ -159,7 +164,7 @@ An example is shown below (**10** being the timeout value).
 $ curl -v -X DELETE \http://10.20.17.1:5701/hazelcast/rest/queues/myEvents/10
 ```
 
-The above call is equivalent to `HazelcastInstance#getQueue("myEvents").poll(10, SECONDS);`. Below is the response.
+The above call is equivalent to `HazelcastInstance.getQueue("myEvents").poll(10, SECONDS);`. Below is the response.
 
 ```plain
 < HTTP/1.1 200 OK
@@ -177,13 +182,13 @@ When the timeout is reached, the response will be `No Content` success, i.e. the
 ```
 
 
-**Getting the size of the queue**
+#### Getting the size of the queue for REST Client
 
 ```plain
 $ curl -v -X GET \http://10.20.17.1:5701/hazelcast/rest/queues/myEvents/size
 ```
 
-The above call is equivalent to `HazelcastInstance#getQueue("myEvents").size();`. Below is a sample response.
+The above call is equivalent to `HazelcastInstance.getQueue("myEvents").size();`. Below is a sample response.
 
 ```plain
 < HTTP/1.1 200 OK
@@ -192,6 +197,9 @@ The above call is equivalent to `HazelcastInstance#getQueue("myEvents").size();`
 5
 ```
 ---
+
+### Checking the Status of the Cluster for REST Client
+
 Besides the above operations, you can check the status of your cluster, a sample of which is shown below.
 
 ```plain

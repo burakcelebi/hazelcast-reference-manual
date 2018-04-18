@@ -16,13 +16,58 @@ You can integrate Hazelcast with Spring and this chapter explains the configurat
 <br></br>
 
 
-#### Declaring Beans by Spring *beans* Namespace 
+#### Enabling Spring Integration
 
 ***Classpath Configuration*** 
 
-This configuration requires the following jar file in the classpath:
+![image](images/NoteSmall.jpg) ***NOTE:*** *To enable Spring integration, either `hazelcast-spring-<version>.jar` or `hazelcast-all-<version>.jar` must be in the classpath.*
 
-- `hazelcast-`<*version*>`.jar`
+If you use Maven, add the following lines to your `pom.xml`.
+
+If you use `hazelcast-all.jar`:
+
+```xml
+<dependency>
+  <groupId>com.hazelcast</groupId>
+  <artifactId>hazelcast-all</artifactId>
+  <version>"your Hazelcast version, e.g. 3.8"</version>
+</dependency>
+```
+
+If you use `hazelcast-spring.jar`:
+
+```xml
+<dependency>
+  <groupId>com.hazelcast</groupId>
+  <artifactId>hazelcast-spring</artifactId>
+  <version>"your Hazelcast version, e.g. 3.8"</version>
+</dependency>
+```
+
+If you use other build systems, you have to adjust the definition of dependencies to your needs.
+
+##### Troubleshooting
+
+When the Spring Integration JARs are not correctly installed in the Java classpath, you may see either of the following exceptions:
+
+```
+org.xml.sax.SAXParseException; systemId: http://hazelcast.com/schema/spring/hazelcast-spring.xsd; lineNumber: 2; columnNumber: 35; s4s-elt-character: Non-whitespace characters are not allowed in schema elements other than 'xs:appinfo' and 'xs:documentation'. Saw '301 Moved Permanently'.
+```
+<br>
+
+```
+org.springframework.beans.factory.parsing.BeanDefinitionParsingException: Configuration problem: Unable to locate Spring NamespaceHandler for XML schema namespace [http://www.hazelcast.com/schema/spring]
+```
+<br>
+
+
+```
+org.xml.sax.SAXParseException; lineNumber: 25; columnNumber: 33; schema_reference.4: Failed to read schema document 'http://www.hazelcast.com/schema/spring/hazelcast-spring.xsd', because 1) could not find the document; 2) the document could not be read; 3) the root element of the document is not <xsd:schema>.
+```
+
+In this case, please ensure that the required classes are in the classpath, as explained above.
+
+#### Declaring Beans by Spring *beans* Namespace 
 
 ***Bean Declaration*** 
 
@@ -50,19 +95,6 @@ You can declare Hazelcast Objects using the default Spring *beans* namespace. Ex
 
 
 #### Declaring Beans by *hazelcast* Namespace 
-
-***Configuring Classpath*** 
-
-Hazelcast-Spring integration requires the following JAR files in the classpath:
-
-- `hazelcast-spring-`<*version*>`.jar`
-- `hazelcast-`<*version*>`.jar`
-
-or
-
-- `hazelcast-all-`<*version*>`.jar`
-
-***Declaring Beans*** 
 
 Hazelcast has its own namespace **hazelcast** for bean definitions. You can easily add the namespace declaration *xmlns:hz="http://www.hazelcast.com/schema/spring"* to the `beans` element in the context file so that *hz* namespace shortcut can be used as a bean declaration.
 
@@ -131,10 +163,16 @@ Here is an example schema definition for Hazelcast 3.3.x:
 	- `replicatedmap`
 	- `queue`
 	- `topic`
+	- `reliableTopic`
 	- `set`
 	- `list`
 	- `executorService`
+	- `durableExecutorService`
+ 	- `scheduledExecutorService`
+ 	- `ringbuffer`
+ 	- `cardinalityEstimator`
 	- `idGenerator`
+	- `flakeIdGenerator`
 	- `atomicLong`
 	- `atomicReference`
 	- `semaphore`
@@ -146,18 +184,25 @@ Here is an example schema definition for Hazelcast 3.3.x:
 <hz:map id="map" instance-ref="client" name="map" lazy-init="true" />
 <hz:multiMap id="multiMap" instance-ref="instance" name="multiMap"
     lazy-init="false" />
-<hz:replicatedmap id="replicatedmap" instance-ref="instance" 
+<hz:replicatedMap id="replicatedmap" instance-ref="instance"
     name="replicatedmap" lazy-init="false" />
 <hz:queue id="queue" instance-ref="client" name="queue" 
     lazy-init="true" depends-on="instance"/>
 <hz:topic id="topic" instance-ref="instance" name="topic" 
     depends-on="instance, client"/>
+<hz:reliableTopic id="reliableTopic" instance-ref="instance" name="reliableTopic"/>
 <hz:set id="set" instance-ref="instance" name="set" />
 <hz:list id="list" instance-ref="instance" name="list"/>
 <hz:executorService id="executorService" instance-ref="client" 
     name="executorService"/>
+<hz:durableExecutorService id="durableExec" instance-ref="instance" name="durableExec"/>
+<hz:scheduledExecutorService id="scheduledExec" instance-ref="instance" name="scheduledExec"/>
+<hz:ringbuffer id="ringbuffer" instance-ref="instance" name="ringbuffer"/>
+<hz:cardinalityEstimator id="cardinalityEstimator" instance-ref="instance" name="cardinalityEstimator"/>
 <hz:idGenerator id="idGenerator" instance-ref="instance" 
     name="idGenerator"/>
+<hz:flakeIdGenerator id="flakeIdGenerator" instance-ref="instance" 
+    name="flakeIdGenerator"/>
 <hz:atomicLong id="atomicLong" instance-ref="instance" name="atomicLong"/>
 <hz:atomicReference id="atomicReference" instance-ref="instance" 
     name="atomicReference"/>
@@ -185,22 +230,23 @@ Hazelcast also supports `lazy-init`, `scope` and `depends-on` bean attributes.
 For map-store, you should set either the *class-name* or the *implementation* attribute.
 
 ```xml
-<hz:config>
-  <hz:map name="map1">
-    <hz:near-cache time-to-live-seconds="0" max-idle-seconds="60"
-        eviction-policy="LRU" max-size="5000"  invalidate-on-change="true"/>
+<hz:config id="config">
+    <hz:map name="map1">
+        <hz:map-store enabled="true" class-name="com.foo.DummyStore"
+            write-delay-seconds="0" />
 
-    <hz:map-store enabled="true" class-name="com.foo.DummyStore"
-        write-delay-seconds="0"/>
-  </hz:map>
+        <hz:near-cache time-to-live-seconds="0"
+            max-idle-seconds="60" eviction-policy="LRU" max-size="5000"
+            invalidate-on-change="true" />
+    </hz:map>
 
-  <hz:map name="map2">
-    <hz:map-store enabled="true" implementation="dummyMapStore"
-        write-delay-seconds="0"/>
-  </hz:map>
-
-  <bean id="dummyMapStore" class="com.foo.DummyStore" />
+    <hz:map name="map2">
+        <hz:map-store enabled="true" implementation="dummyMapStore"
+            write-delay-seconds="0" />
+    </hz:map>
 </hz:config>
+
+<bean id="dummyMapStore" class="com.foo.DummyStore" />
 ```
 
 
@@ -217,7 +263,7 @@ Hazelcast Distributed `ExecutorService`, or more generally any Hazelcast managed
 
 #### SpringAware Examples
 
-- Configure a Hazelcast Instance (3.3.x) via Spring Configuration and define *someBean* as Spring Bean.
+- Configure a Hazelcast Instance via Spring Configuration and define *someBean* as Spring Bean.
 - Add `<hz:spring-aware />` to Hazelcast configuration to enable @SpringAware.
 
 ```xml
@@ -232,7 +278,7 @@ Hazelcast Distributed `ExecutorService`, or more generally any Hazelcast managed
                 http://www.hazelcast.com/schema/spring
                 http://www.hazelcast.com/schema/spring/hazelcast-spring.xsd">
 
-  <context:annotation-config />
+  <context:component-scan base-package="..."/>
 
   <hz:hazelcast id="instance">
     <hz:config>
@@ -265,37 +311,34 @@ Hazelcast Distributed `ExecutorService`, or more generally any Hazelcast managed
 @Scope("prototype")
 public class SomeValue implements Serializable, ApplicationContextAware {
 
-  private transient ApplicationContext context;
+    private transient ApplicationContext context;
+    private transient SomeBean someBean;
+    private transient boolean init = false;
 
-  private transient SomeBean someBean;
+    public void setApplicationContext( ApplicationContext applicationContext )
+        throws BeansException {
+        context = applicationContext;
+    }
 
-  private transient boolean init = false;
+    @Autowired
+    public void setSomeBean( SomeBean someBean)  {
+        this.someBean = someBean;
+    }
 
-  public void setApplicationContext( ApplicationContext applicationContext )
-    throws BeansException {
-    context = applicationContext;
-  }
-
-  @Autowired
-  public void setSomeBean( SomeBean someBean)  {
-    this.someBean = someBean;
-  }
-
-  @PostConstruct
-  public void init() {
-    someBean.doSomethingUseful();
-    init = true;
-  }
-  ...
+    @PostConstruct
+    public void init() {
+        someBean.doSomethingUseful();
+        init = true;
+    }
 }
 ```
 
-- Get `SomeValue` Object from Context and put it into Hazelcast Distributed Map on Node-1.
+- Get `SomeValue` Object from Context and put it into Hazelcast Distributed Map on the first member.
 
 ```java
 HazelcastInstance hazelcastInstance = 
-    (HazelcastInstance) context.getBean( "hazelcast" );
-SomeValue value = (SomeValue) context.getBean( "someValue" )
+    (HazelcastInstance) context.getBean( "instance" );
+SomeValue value = (SomeValue) context.getBean( "someValue" );
 IMap<String, SomeValue> map = hazelcastInstance.getMap( "values" );
 map.put( "key", value );
 ```
@@ -304,7 +347,7 @@ map.put( "key", value );
 
 ```java
 HazelcastInstance hazelcastInstance = 
-    (HazelcastInstance) context.getBean( "hazelcast" );
+    (HazelcastInstance) context.getBean( "instance" );
 IMap<String, SomeValue> map = hazelcastInstance.getMap( "values" );
 SomeValue value = map.get( "key" );
 Assert.assertTrue( value.init );
@@ -320,23 +363,22 @@ Assert.assertTrue( value.init );
 public class SomeTask
     implements Callable<Long>, ApplicationContextAware, Serializable {
 
-  private transient ApplicationContext context;
+    private transient ApplicationContext context;
+    private transient SomeBean someBean;
 
-  private transient SomeBean someBean;
+    public Long call() throws Exception {
+        return someBean.value;
+    }
 
-  public Long call() throws Exception {
-    return someBean.value;
-  }
+    public void setApplicationContext( ApplicationContext applicationContext )
+        throws BeansException {
+        context = applicationContext;
+    }
 
-  public void setApplicationContext( ApplicationContext applicationContext )
-      throws BeansException {
-    context = applicationContext;
-  }
-
-  @Autowired
-  public void setSomeBean( SomeBean someBean ) {
-    this.someBean = someBean;
-  }
+    @Autowired
+    public void setSomeBean( SomeBean someBean ) {
+        this.someBean = someBean;
+    }
 }
 ```
 
@@ -344,16 +386,17 @@ public class SomeTask
 
 ```java
 HazelcastInstance hazelcastInstance =
-    (HazelcastInstance) context.getBean( "hazelcast" );
+    (HazelcastInstance) context.getBean( "instance" );
 SomeBean bean = (SomeBean) context.getBean( "someBean" );
 
-Future<Long> f = hazelcastInstance.getExecutorService().submit(new SomeTask());
+Future<Long> f = hazelcastInstance.getExecutorService("executorService")
+    .submit(new SomeTask());
 Assert.assertEquals(bean.value, f.get().longValue());
 
 // choose a member
 Member member = hazelcastInstance.getCluster().getMembers().iterator().next();
 
-Future<Long> f2 = (Future<Long>) hazelcast.getExecutorService()
+Future<Long> f2 = (Future<Long>) hazelcast.getExecutorService("executorService")
     .submitToMember(new SomeTask(), member);
 Assert.assertEquals(bean.value, f2.get().longValue());
 ```
@@ -367,7 +410,7 @@ Assert.assertEquals(bean.value, f2.get().longValue());
 ***Sample Code***: *Please see our sample application for <a href="https://github.com/hazelcast/hazelcast-code-samples/tree/master/hazelcast-integration/spring-cache-manager" target="_blank">Spring Cache</a>.*
 <br></br>
 
-As of version 3.1, Spring Framework provides support for adding caching into an existing Spring application. 
+As of version 3.1, Spring Framework provides support for adding caching into an existing Spring application. Spring 3.2 and later versions support JCache compliant caching providers. You can also use JCache caching backed by Hazelcast if your Spring version supports JCache.
 
 
 #### Declarative Spring Cache Configuration
@@ -375,7 +418,7 @@ As of version 3.1, Spring Framework provides support for adding caching into an 
 ```xml
 <cache:annotation-driven cache-manager="cacheManager" />
 
-<hz:hazelcast id="hazelcast">
+<hz:hazelcast id="instance">
   ...
 </hz:hazelcast>
 
@@ -384,6 +427,76 @@ As of version 3.1, Spring Framework provides support for adding caching into an 
 </bean>
 ```
 
+Hazelcast uses its Map implementation for underlying cache. You can configure a map with your cache's name if you want to set additional configuration such as `ttl`.
+
+```xml
+<cache:annotation-driven cache-manager="cacheManager" />
+
+<hz:hazelcast id="instance">
+  <hz:config>
+    ...
+
+    <hz:map name="city" time-to-live-seconds="0" in-memory-format="BINARY" />
+  </hz:config>
+</hz:hazelcast>
+
+<bean id="cacheManager" class="com.hazelcast.spring.cache.HazelcastCacheManager">
+  <constructor-arg ref="instance"/>
+</bean>
+```
+
+```
+public interface IDummyBean {
+    @Cacheable("city")
+    String getCity();
+}
+```
+
+##### Defining Timeouts for Cache Read Operation
+
+Starting with Hazelcast 3.8.4, you can define a timeout value for the get operations from your Spring cache. This may be useful for some cases, such as SLA requirements. Hazelcast provides a property to specify this timeout: `hazelcast.spring.cache.prop`. This can be specified as a Java property (using `-D`) or you can add this property to your Spring properties file (usually named as `application.properties`).
+
+A sample usage is given below:
+
+```
+hazelcast.spring.cache.prop=defaultReadTimeout=2,cache1=10,cache2=20
+```
+
+The argument `defaultReadTimeout` applies to all of your Spring caches. If you want to define different timeout values for some specific Spring caches, you can provide them as a comma separated list as shown in the above sample usage. The values are in milliseconds. If you want to have no timeout for a cache, simply set it to `0` or a negative value.
+
+
+
+#### Declarative Hazelcast JCache Based Caching Configuration
+
+```xml
+<cache:annotation-driven cache-manager="cacheManager" />
+
+<hz:hazelcast id="instance">
+  ...
+</hz:hazelcast>
+
+<hz:cache-manager id="hazelcastJCacheCacheManager" instance-ref="instance" name="hazelcastJCacheCacheManager"/>
+
+<bean id="cacheManager" class="org.springframework.cache.jcache.JCacheCacheManager">
+    <constructor-arg ref="hazelcastJCacheCacheManager" />
+</bean>
+```
+
+You can use JCache implementation in both member and client mode. A cache manager should be bound to an instance. Instance can be referenced by `instance-ref` attribute or provided by `hazelcast.instance.name` property which is passed to CacheManager. Instance should be specified using one of these methods.
+
+![image](images/NoteSmall.jpg) ***NOTE:*** *Instance name provided in properties overrides `instance-ref` attribute.*
+
+You can specify an URI for each cache manager with `uri` attribute.
+
+
+```xml
+<hz:cache-manager id="cacheManager2" name="cacheManager2" uri="testURI">
+    <hz:properties>
+        <hz:property name="hazelcast.instance.name">named-spring-hz-instance</hz:property>
+        <hz:property name="testProperty">testValue</hz:property>
+    </hz:properties>
+</hz:cache-manager>
+```
 
 #### Annotation-Based Spring Cache Configuration
 
@@ -394,17 +507,18 @@ Annotation-Based Configuration does not require any XML definition. To perform A
 ```java
 @Configuration
 @EnableCaching
-public class CachingConfiguration implements CachingConfigurer{
+public class CachingConfiguration extends CachingConfigurerSupport {
     @Bean
     public CacheManager cacheManager() {
         ClientConfig config = new ClientConfig();
         HazelcastInstance client = HazelcastClient.newHazelcastClient(config);
-        return new HazelcastCacheManager(client);
+        return new com.hazelcast.spring.cache.HazelcastCacheManager(client);
     }
     @Bean
     public KeyGenerator keyGenerator() {
         return null;
     }
+}
 ```
 
 - Launch Application Context and register `CachingConfiguration`.
@@ -423,27 +537,87 @@ For more information about Spring Cache, please see <a href="http://static.sprin
 ***Sample Code***: *Please see our <a href="https://github.com/hazelcast/hazelcast-code-samples/tree/master/hazelcast-integration/spring-hibernate-2ndlevel-cache" target="_blank">sample application</a> for Hibernate 2nd Level Cache Config.*
 <br></br>
 
-If you are using Hibernate with Hazelcast as a second level cache provider, you can easily create `RegionFactory` instances within Spring configuration (by Spring version 3.1). That way, you can use the same `HazelcastInstance` as Hibernate L2 cache instance.
+If you are using Hibernate with Hazelcast as a second level cache provider, you can easily configure your 
+`LocalSessionFactoryBean` to use a Hazelcast instance by passing Hazelcast instance name. That way, you can use the 
+same `HazelcastInstance` as Hibernate L2 cache instance.
 
 ```xml
-<hz:hibernate-region-factory id="regionFactory" instance-ref="instance"
-    mode="LOCAL" />
 ...
 <bean id="sessionFactory" 
       class="org.springframework.orm.hibernate3.LocalSessionFactoryBean" 
 	  scope="singleton">
   <property name="dataSource" ref="dataSource"/>
-  <property name="cacheRegionFactory" ref="regionFactory" />
+  <property name="hibernateProperties">
+      <props>
+          ...
+          <prop key="hibernate.cache.region.factory_class">com.hazelcast.hibernate.HazelcastLocalCacheRegionFactory</prop>
+          <prop key="hibernate.cache.hazelcast.instance_name">${hz.instance.name}</prop>
+      </props>
+  </property>
   ...
 </bean>
 ```
 
-**Hibernate RegionFactory Modes**
+**Hibernate RegionFactory Classes**
 
-- LOCAL
-- DISTRIBUTED 
+- `com.hazelcast.hibernate.HazelcastLocalCacheRegionFactory`
+- `com.hazelcast.hibernate.HazelcastCacheRegionFactory`
 
-Please refer to Hibernate [Configuring RegionFactory](#configuring-regionfactory) for more information.
+Please refer to Hibernate <a href="https://github.com/hazelcast/hazelcast-hibernate#configuring-regionfactory" target="_blank">Configuring RegionFactory</a> for more information.
+
+
+### Configuring Hazelcast Transaction Manager
+
+***Sample Code***: *Please see our <a href="https://github.com/hazelcast/hazelcast-code-samples/tree/master/hazelcast-integration/spring-transaction-manager" target="_blank">sample application</a> for Hazelcast Transaction Manager in our code samples repository.*
+<br></br>
+
+Starting with Hazelcast 3.7, you can get rid of the boilerplate code to begin, commit or rollback transactions by using <a href="http://docs.hazelcast.org/docs/latest/javadoc/com/hazelcast/spring/transaction/HazelcastTransactionManager.html" target="_blank">HazelcastTransactionManager</a>
+which is a `PlatformTransactionManager` implementation to be used with Spring Transaction API.
+
+#### Sample Configuration for Hazelcast Transaction Manager
+
+You need to register `HazelcastTransactionManager` as your transaction manager implementation and also you need to
+register <a href="http://docs.hazelcast.org/docs/latest/javadoc/com/hazelcast/spring/transaction/ManagedTransactionalTaskContext.html" target="_blank">ManagedTransactionalTaskContext</a>
+to access transactional data structures within your service class.
+
+
+```xml
+...
+<hz:hazelcast id="instance">
+      ...
+</hz:hazelcast>
+...
+<tx:annotation-driven transaction-manager="transactionManager"/>
+<bean id="transactionManager" class="com.hazelcast.spring.transaction.HazelcastTransactionManager">
+    <constructor-arg ref="instance"/>
+</bean>
+<bean id="transactionalContext" class="com.hazelcast.spring.transaction.ManagedTransactionalTaskContext">
+    <constructor-arg ref="transactionManager"/>
+</bean>
+<bean id="YOUR_SERVICE" class="YOUR_SERVICE_CLASS">
+    <property name="transactionalTaskContext" ref="transactionalContext"/>
+</bean>
+...
+```
+
+#### Sample Transactional Method
+
+```java
+public class ServiceWithTransactionalMethod {
+
+    private TransactionalTaskContext transactionalTaskContext;
+
+    @Transactional
+    public void transactionalPut(String key, String value) {
+        transactionalTaskContext.getMap("testMap").put(key, value);
+    }
+
+    ...
+}
+```
+
+After marking your method as `Transactional` either declaratively or by annotation and accessing the data structure
+through the `TransactionalTaskContext`, `HazelcastTransactionManager` will begin, commit or rollback the transaction for you.
 
 
 ### Best Practices
@@ -456,13 +630,12 @@ To avoid this issue, the target property/attribute can be declared as un-typed `
 
 ```java
 public class SomeBean {
-  @Autowired
-  IMap map; // instead of IMap<K, V> map
+    @Autowired
+    IMap map; // instead of IMap<K, V> map
 
-  @Autowired
-  IQueue queue; // instead of IQueue<E> queue
-
-  ...
+    @Autowired
+    IQueue queue; // instead of IQueue<E> queue
+    ...
 }
 ```
 
@@ -471,22 +644,21 @@ Or, parameters of injection methods (constructor, setter) can be un-typed as sho
 ```java
 public class SomeBean {
 
-  IMap<K, V> map;
+    IMap<K, V> map;
+    IQueue<E> queue;
 
-  IQueue<E> queue;
+    // Instead of IMap<K, V> map
+    public SomeBean(IMap map) {
+        this.map = map;
+    }
 
-  // Instead of IMap<K, V> map
-  public SomeBean(IMap map) {
-    this.map = map;
-  }
+    ...
 
-  ...
-
-  // Instead of IQueue<E> queue
-  public void setQueue(IQueue queue) {
-    this.queue = queue;
-  }
-  ...
+    // Instead of IQueue<E> queue
+    public void setQueue(IQueue queue) {
+        this.queue = queue;
+    }
+    ...
 }
 ```
 <br> </br>

@@ -2,83 +2,46 @@
 
 ### Creating an Entry Processor
 
-The EntryProcessorTest class has the following methods.
+The class `IncrementingEntryProcessor` creates an entry processor to process the map 
+entries. It implements:
 
-* `testMapEntryProcessor` puts one map entry and calls `executeOnKey` to process that map entry.
-* `testMapEntryProcessor` puts all the entries in a map and calls `executeOnEntries` to process 
-   all the entries.
-
-The static class `IncrementingEntryProcessor` creates an entry processor to process the map 
-entries in the EntryProcessorTest class. It creates the entry processor class by:
-
-- implementing the map interfaces EntryProcessor and EntryBackupProcessor.
-- implementing the Java.io.Serializable interface.
-- implementing the EntryProcessor methods `process` and `getBackupProcessor`.
-- implementing the EntryBackupProcessor method `processBackup`.
+- the map interfaces `EntryProcessor` and `EntryBackupProcessor`.
+- `java.io.Serializable` interface.
+- `EntryProcessor` methods `process` and `getBackupProcessor`.
+- `EntryBackupProcessor` method `processBackup`.
 
 ```java
-public class EntryProcessorTest {
+public class IncrementingEntryProcessor
+      implements EntryProcessor<Integer, Integer>, EntryBackupProcessor<Integer, Integer>, Serializable {
 
-  @Test
-  public void testMapEntryProcessor() throws InterruptedException {
-    Config config = new Config().getMapConfig( "default" )
-        .setInMemoryFormat( MapConfig.InMemoryFormat.OBJECT );
-        
-    HazelcastInstance hazelcastInstance1 = Hazelcast.newHazelcastInstance( config );
-    HazelcastInstance hazelcastInstance2 = Hazelcast.newHazelcastInstance( config );
-    IMap<Integer, Integer> map = hazelcastInstance1.getMap( "mapEntryProcessor" );
-    map.put( 1, 1 );
-    EntryProcessor entryProcessor = new IncrementingEntryProcessor();
-    map.executeOnKey( 1, entryProcessor );
-    assertEquals( map.get( 1 ), (Object) 2 );
-    hazelcastInstance1.getLifecycleService().shutdown();
-    hazelcastInstance2.getLifecycleService().shutdown();
-  }
-
-  @Test
-  public void testMapEntryProcessorAllKeys() throws InterruptedException {
-    StaticNodeFactory factory = new StaticNodeFactory( 2 );
-    Config config = new Config().getMapConfig( "default" )
-        .setInMemoryFormat( MapConfig.InMemoryFormat.OBJECT );
-        
-    HazelcastInstance hazelcastInstance1 = factory.newHazelcastInstance( config );
-    HazelcastInstance hazelcastInstance2 = factory.newHazelcastInstance( config );
-    IMap<Integer, Integer> map = hazelcastInstance1
-        .getMap( "mapEntryProcessorAllKeys" );
-        
-    int size = 100;
-    for ( int i = 0; i < size; i++ ) {
-      map.put( i, i );
-    }
-    EntryProcessor entryProcessor = new IncrementingEntryProcessor();
-    Map<Integer, Object> res = map.executeOnEntries( entryProcessor );
-    for ( int i = 0; i < size; i++ ) {
-      assertEquals( map.get( i ), (Object) (i + 1) );
-    }
-    for ( int i = 0; i < size; i++ ) {
-      assertEquals( map.get( i ) + 1, res.get( i ) );
-    }
-    hazelcastInstance1.getLifecycleService().shutdown();
-    hazelcastInstance2.getLifecycleService().shutdown();
-  }
-
-  static class IncrementingEntryProcessor
-      implements EntryProcessor, EntryBackupProcessor, Serializable {
-      
-    public Object process( Map.Entry entry ) {
-      Integer value = (Integer) entry.getValue();
-      entry.setValue( value + 1 );
-      return value + 1;
+    public Object process( Map.Entry<Integer, Integer> entry ) {
+        Integer value = entry.getValue();
+        entry.setValue( value + 1 );
+        return value + 1;
     }
 
-    public EntryBackupProcessor getBackupProcessor() {
-      return IncrementingEntryProcessor.this;
+    public EntryBackupProcessor<Integer, Integer> getBackupProcessor() {
+        return IncrementingEntryProcessor.this;
     }
 
-    public void processBackup( Map.Entry entry ) {
-      entry.setValue( (Integer) entry.getValue() + 1 );
-    }
-  }
+    public void processBackup( Map.Entry<Integer, Integer> entry ) {
+        entry.setValue( entry.getValue() + 1 );
+    } 
 }
 ```
+
+A sample usage is shown below:
+
+```java
+IMap<Integer, Integer> map = hazelcastInstance.getMap( "myMap" );
+for ( int i = 0; i < 100; i++ ) {
+    map.put( i, i );
+}
+Map<Integer, Object> res = map.executeOnEntries( new IncrementingEntryProcessor() );
+```
+
+
+![image](images/NoteSmall.jpg) ***NOTE***: *You should explicitly call the `setValue` method of `Map.Entry` when modifying data in the entry processor. Otherwise, the entry processor will be accepted as read-only.*
+
+![image](images/NoteSmall.jpg) ***NOTE***: *An entry processor instance is not thread safe. If you are storing a partition specific state between invocations, be sure to register this in a thread-local.  An entry processor instance can be used by multiple partition threads.*
 

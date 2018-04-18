@@ -12,16 +12,16 @@ The following code samples describe the mechanism of `ICountDownLatch`. Assume t
 
 ```java
 public class Leader {
-  public static void main( String[] args ) throws Exception {
-    HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance();
-    ICountDownLatch latch = hazelcastInstance.getCountDownLatch( "countDownLatch" );
-    System.out.println( "Starting" );
-    latch.trySetCount( 1 );
-    Thread.sleep( 30000 );
-    latch.countDown();
-    System.out.println( "Leader finished" );
-    latch.destroy();
-  }
+    public static void main( String[] args ) throws Exception {
+        HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance();
+        ICountDownLatch latch = hazelcastInstance.getCountDownLatch( "countDownLatch" );
+        System.out.println( "Starting" );
+        latch.trySetCount( 1 );
+        Thread.sleep( 30000 );
+        latch.countDown();
+        System.out.println( "Leader finished" );
+        latch.destroy();
+    }
 }
 ```
 
@@ -30,13 +30,13 @@ Since only a single step is needed to be completed as a sample, the above code i
 
 ```java
 public class Follower {
-  public static void main( String[] args ) throws Exception {
-    HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance();
-    ICountDownLatch latch = hazelcastInstance.getCountDownLatch( "countDownLatch" );
-    System.out.println( "Waiting" );
-    boolean success = latch.await( 10, TimeUnit.SECONDS );
-    System.out.println( "Complete: " + success );
-  }
+    public static void main( String[] args ) throws Exception {
+        HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance();
+        ICountDownLatch latch = hazelcastInstance.getCountDownLatch( "countDownLatch" );
+        System.out.println( "Waiting" );
+        boolean success = latch.await( 10, TimeUnit.SECONDS );
+        System.out.println( "Complete: " + success );
+    }
 } 
 ```
 
@@ -44,11 +44,11 @@ The follower class above first retrieves `ICountDownLatch` and then calls the `a
 
 ### Recovering From Failure
 
-In a distributed environment, the counting down cluster member may go down. In this case, all listeners are notified immediately and automatically by Hazelcast. The state of the current process just before the failure should be verified and 'how to continue now' should be decided (e.g. restart all process operations, continue with the first failed process operation, throw an exception, etc.).
+In a distributed environment, the counting down cluster member may go down. In this case, all listeners are notified immediately and automatically by Hazelcast. The state of the current process just before the failure should be verified and 'how to continue now' should be decided, e.g., restart all process operations, continue with the first failed process operation, and throw an exception.
 
 ### Using ICountDownLatch
 
-Although the `ICountDownLatch` is a very useful synchronization aid, you will probably not use it on a daily basis. Unlike Java’s implementation, Hazelcast’s `ICountDownLatch` count can be re-set after a countdown has finished but not during an active count.
+Although the `ICountDownLatch` is a very useful synchronization aid, you will probably not use it on a daily basis. Unlike Java's implementation, Hazelcast's `ICountDownLatch` count can be reset after a countdown has finished, but not during an active count.
 
 ![image](images/NoteSmall.jpg) ***NOTE:*** *ICountDownLatch has 1 synchronous backup and no asynchronous backups. Its backup count is not configurable. Also, the count cannot be re-set during an active count, it should be re-set after the countdown is finished.*
 

@@ -2,8 +2,8 @@
 ### JCache Eviction
 
 Caches are generally not expected to grow to an infinite size. Implementing an [expiry policy](#expirepolicy) is one way you can
-prevent the infinite growth, but sometimes it is hard to define a meaningful expiration timeout. Therefore, Hazelcast JCache provides the eviction feature. Eviction offers the possibility to remove entries based on the cache size or amount of used memory
-(Hazelcast Enterprise Only) and not based on timeouts.
+prevent infinite growth, but sometimes it is hard to define a meaningful expiration timeout. Therefore, Hazelcast JCache provides the eviction feature. Eviction offers the possibility of removing entries based on the cache size or amount of used memory
+(Hazelcast IMDG Enterprise Only) and not based on timeouts.
 
 #### Eviction and Runtime
 
@@ -16,8 +16,8 @@ rendered as O(1), but it can be faster than the normal runtime cost if the algor
 Most importantly, typical production systems have two common types of caches:
 
 - **Reference Caches**: Caches for reference data are normally small and are used to speed up the de-referencing as a lookup table. Those
-caches are commonly tend to be small and contain a previously known, fixed number of elements (e.g. states of the USA or
-abbreviations of elements).
+caches are commonly tend to be small and contain a previously known, fixed number of elements, e.g., states of the USA or
+abbreviations of elements.
 - **Active DataSet Caches**:  The other type of caches normally caches an active data set. These caches run to their maximum
 size and evict the oldest or not frequently used entries to keep in memory bounds. They sit in front of a database or HTML
 generators to cache the latest requested data.
@@ -29,7 +29,7 @@ of the cache. For detailed information, please see the [Eviction Algorithm secti
 
 Hazelcast JCache provides two commonly known eviction policies, LRU and LFU, but loosens the rules for predictable runtime
 behavior. LRU, normally recognized as `Least Recently Used`, is implemented as `Less Recently Used`, and LFU known as `Least Frequently Used` is implemented as
-`Less Frequently Used`. The details about this difference is explained in the
+`Less Frequently Used`. The details about this difference are explained in the
 [Eviction Algorithm section](#eviction-algorithm).
 
 Eviction Policies are configured by providing the corresponding abbreviation to the configuration as shown in the [ICache Configuration section](#icache-configuration). As already mentioned, two built-in policies are available:
@@ -46,7 +46,101 @@ And to configure the use of the LFU (Less Frequently Used) policy:
 <eviction size="10000" max-size-policy="ENTRY_COUNT" eviction-policy="LFU" />
 ```
 
-The default eviction policy is LRU. Therefore, Hazelcast JCache does not offer the possibility to perform no eviction.
+The default eviction policy is LRU. Therefore, Hazelcast JCache does not offer the possibility of performing no eviction.
+
+##### Custom Eviction Policies
+
+Besides the out-of-the-box eviction policies LFU and LRU, you can also specify your custom eviction policies 
+through the eviction configuration either programmatically or declaratively.
+
+You can provide your `com.hazelcast.cache.CacheEvictionPolicyComparator` implementation to compare `com.hazelcast.cache.CacheEntryView`s. Supplied `CacheEvictionPolicyComparator` is used to compare cache entry views to select the one with higher priority to evict.
+
+Here is an example for custom eviction policy comparator implementation for JCache:
+
+```java
+public class MyCacheEvictionPolicyComparator
+        extends CacheEvictionPolicyComparator<Long, String> {
+
+    @Override
+    public int compare(CacheEntryView<Long, String> e1, CacheEntryView<Long, String> e2) {
+        long id1 = e1.getKey();
+        long id2 = e2.getKey();
+        if (id1 > id2) {
+            return FIRST_ENTRY_HAS_HIGHER_PRIORITY_TO_BE_EVICTED; // -1
+        } else if (id1 < id2) {
+            return SECOND_ENTRY_HAS_HIGHER_PRIORITY_TO_BE_EVICTED; // +1
+        } else {
+            return BOTH_OF_ENTRIES_HAVE_SAME_PRIORITY_TO_BE_EVICTED; // 0
+        }
+    }
+
+}
+```
+
+###### Configuration
+
+Custom eviction policy comparator can be specified through the eviction configuration 
+by giving the full class name of the `EvictionPolicyComparator` (`CacheEvictionPolicyComparator` for JCache and its Near Cache) 
+implementation or by specifying its instance itself.
+
+**Programmatic:**
+
+You can specify the full class name of custom `EvictionPolicyComparator` (`CacheEvictionPolicyComparator` for JCache and its Near Cache) implementation 
+through `EvictionConfig`. This approach is useful when eviction configuration is specified at the client side 
+and custom `EvictionPolicyComparator` implementation class itself does not exist at the client but at server side.
+
+```java
+CacheConfig cacheConfig = new CacheConfig();
+...
+EvictionConfig evictionConfig = 
+    new EvictionConfig(50000, 
+                       MaxSizePolicy.ENTRY_COUNT, 
+                       "com.mycompany.MyEvictionPolicyComparator");
+cacheConfig.setEvictionConfig(evictionConfig);
+```
+
+You can specify the custom `EvictionPolicyComparator` (`CacheEvictionPolicyComparator` for JCache and its Near Cache) instance itself directly through `EvictionConfig`. 
+
+```java
+CacheConfig cacheConfig = new CacheConfig();
+...
+EvictionConfig evictionConfig = 
+    new EvictionConfig(50000, 
+                       MaxSizePolicy.ENTRY_COUNT, 
+                       new MyEvictionPolicyComparator());
+cacheConfig.setEvictionConfig(evictionConfig);
+```
+
+**Declarative:**
+
+You can specify the full class name of custom `EvictionPolicyComparator` (`CacheEvictionPolicyComparator` for JCache and its Near Cache) implementation 
+in the `<eviction>` tag through `comparator-class-name` attribute in Hazelcast configuration XML file.
+
+```xml
+<cache name="cacheWithCustomEvictionPolicyComparator"> 
+    <eviction size="50000" max-size-policy="ENTRY_COUNT" comparator-class-name="com.mycompany.MyEvictionPolicyComparator"/> 
+</cache>
+```
+
+**Declarative for Spring:**
+
+You can specify the full class name of custom `EvictionPolicyComparator` (`CacheEvictionPolicyComparator` for JCache and its Near Cache) implementation 
+in the `<eviction>` tag through `comparator-class-name` attribute in Hazelcast *Spring* configuration XML file.
+
+```xml
+<hz:cache name="cacheWithCustomEvictionPolicyComparator">
+    <hz:eviction size="50000" max-size-policy="ENTRY_COUNT" comparator-class-name="com.mycompany.MyEvictionPolicyComparator"/>
+</hz:cache>
+```
+
+You can specify the custom `EvictionPolicyComparator` (`CacheEvictionPolicyComparator` for JCache and its Near Cache) bean in the `<eviction>` tag 
+by referencing through `comparator-bean` attribute in Hazelcast *Spring* configuration XML file
+
+```xml
+<hz:cache name="cacheWithCustomEvictionPolicyComparator">
+    <hz:eviction size="50000" max-size-policy="ENTRY_COUNT" comparator-bean="myEvictionPolicyComparatorBean"/>
+</hz:cache>
+```
 
 #### Eviction Strategy
 
@@ -55,7 +149,7 @@ passing them to the eviction policies. Hazelcast JCache provides an amortized O(
 fixed number of samples from the current partition that it is executed against.
 
 The default implementation is `com.hazelcast.cache.impl.eviction.impl.strategy.sampling.SamplingBasedEvictionStrategy` which, as
-mentioned, samples random 15 elements. A detailed description of the algorithm will be explained in the next section.
+mentioned, samples 15 random elements. A detailed description of the algorithm will be explained in the next section.
 
 #### Eviction Algorithm
 
@@ -66,32 +160,32 @@ account to prevent network operations and concurrent accesses.
 
 As an explanation of how the algorithm works, let's examine the following flowchart step by step.
 
-![](images/eviction/eviction-flowchart.png)
+![Hazelcast JCache Eviction Algorithm](images/EvictionFlowchart.png)
 
 1. A new cache is created. Without any special settings, the eviction is configured to kick in when the **cache** exceeds 10.000
 elements and an LRU (Less Recently Used) policy is set up.
-2. The user puts in a new entry (e.g. a key-value pair).
-3. For every put, the eviction strategy evaluates the current cache size and decides if an eviction is necessary or not. If not the entry is stored in step 10.
+2. The user puts in a new entry, e.g., a key-value pair.
+3. For every put, the eviction strategy evaluates the current cache size and decides if an eviction is necessary or not. If not, the entry is stored in step 10.
 4. If eviction is required, a new sampling is started. The built-in sampler is implemented as an lazy iterator.
 5. The sampling algorithm selects a random sample from the underlying data storage.
-6. The eviction strategy tests the sampled entry to already be expired (lazy expiration). If expired, the sampling stops and the entry is removed in step 9.
+6. The eviction strategy tests whether the sampled entry is already expired (lazy expiration). If expired, the sampling stops and the entry is removed in step 9.
 7. If not yet expired, the entry (eviction candidate) is compared to the last best matching candidate (based on the eviction policy) and the new best matching candidate is remembered.
-8. The sampling is repeated for 15 times and then the best matching eviction candidate is returned to the eviction strategy.
+8. The sampling is repeated 15 times and then the best matching eviction candidate is returned to the eviction strategy.
 9. The expired or best matching eviction candidate is removed from the underlying data storage.
 10. The new put entry is stored.
 11. The put operation returns to the user.
 
-As seen by the flowchart, the general eviction operation is easy. As long as the cache does not reach its maximum capacity
+As seen in the flowchart, the general eviction operation is easy. As long as the cache does not reach its maximum capacity,
 or you execute updates (put/replace), no eviction is executed.
 
 To prevent network operations and concurrent access, as mentioned earlier, the cache size is estimated based on the size of the
 currently handled partition. Due to the imbalanced partitions, the single partitions might start to evict
 earlier than the other partitions.
 
-As mentioned in the [General Information section](#general-information), typically two types of caches are found in the production systems. For small caches,
+As mentioned in the [Cache Types section](#cache-types), typically two types of caches are found in the production systems. For small caches,
 referred to as *Reference Caches*, the eviction algorithm has a special set of rules depending on the maximum configured cache
-size. Please see the [Reference Caches section](#reference-caches) for details. The other type of cache is referred to as *Active DataSet Cache*,
-which in most cases makes heavy use of the eviction to keep the most active data set in the memory. Those kinds of caches using a very
+size. Please see the [Reference Caches section](#reference-caches) for details. The other type of cache is referred to as an *Active DataSet Cache*,
+which in most cases makes heavy use of the eviction to keep the most active data set in the memory. Those kinds of caches use a very
 simple but efficient way to estimate the cluster-wide cache size.
 
 All of the following calculations have a well known set of fixed variables:
@@ -105,29 +199,29 @@ All of the following calculations have a well known set of fixed variables:
 
 A Reference Cache is typically small and the number of elements to store in the reference caches is normally 
 known prior to creating the cache. Typical examples of reference caches are lookup tables for abbreviations or the states of a
-country. They tend to have a fixed but small element number and the eviction is an unlikely event and rather undesirable behavior.
+country. They tend to have a fixed but small element number and the eviction is an unlikely event, and rather undesirable behavior.
 
-Since an imbalanced partition is the worst problem in the small and mid-sized caches than for the caches with millions of entries, the normal
+Since an imbalanced partition is a worse problem in small and mid-sized caches than in caches with millions of entries, the normal
 estimation rule (as discussed in a bit) is not applied to these kinds of caches. To prevent unwanted eviction on the small and
 mid-sized caches, Hazelcast implements a special set of rules to estimate the cluster size.
 
-To adjust the imbalance of partitions as found in the typical runtime, the actual calculated maximum cache size (as known as the eviction
+To adjust the imbalance of partitions as found in the typical runtime, the actual calculated maximum cache size (known as the eviction
 threshold) is slightly higher than the user defined size. That means more elements can be stored into the cache
 than expected by the user. This needs to be taken into account especially for large objects, since those can easily exceed the
 expected memory consumption!
 
 **Small caches:**
 
-If a cache is configured with no more than `4.000` element, this cache is considered to be a small cache. The actual partition
+If a cache is configured with no more than `4.000` elements, this cache is considered to be a small cache. The actual partition
 size is derived from the number of elements (`GlobalCapacity`) and the deviation using the following formula:
 
 ```plain
 MaxPartitionSize := Deviation * 5 + BalancedPartitionSize
 ```
 
-This formula ends up with big partition sizes which summed up exceed the expected maximum cache size (set by the user), 
-but since the small caches typically have a well known maximum number of elements, this is not a big
-issue. Only if the small caches are used for a use case other than using it as a reference cache, this needs to be taken into account.
+This formula ends up with big partition sizes which, summed up, exceed the expected maximum cache size (set by the user). 
+Since the small caches typically have a well known maximum number of elements, this is not a big
+issue. Only if the small caches are used for a use case other than as a reference cache, this needs to be taken into account.
 
 **Mid-sized caches**
 
@@ -157,7 +251,7 @@ access to other partitions and background tasks. It also offers a highly predict
 The estimation algorithm is based on the previously calculated maximum partition size (please see the [Reference Caches section](#reference-caches) and [Active DataSet Caches section](#active-dataset-caches)) and is calculated
 against the current partition only.
 
-The algorithm to reckon the number of stored entries in the cache (cluster-wide) and if the eviction is necessary is shown in the
+The algorithm to reckon the number of stored entries in the cache (cluster-wide) and decide if the eviction is necessary is shown in the
 following pseudo-code example:
 
 ```plain
